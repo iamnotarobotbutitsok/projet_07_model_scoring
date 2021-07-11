@@ -9,11 +9,12 @@ st.set_page_config(layout="wide")
 
 @st.cache
 def load_data():
-    test = pd.read_csv("/home/princeba/LIVRE_PERSO/01_travailPerso/AI-Engenierie/openclassRoom/projet/projet07/projet_07_model_scoring/app/test.csv")
-    train = pd.read_csv("/home/princeba/LIVRE_PERSO/01_travailPerso/AI-Engenierie/openclassRoom/projet/projet07/projet_07_model_scoring/app/Train.csv")
-    return test, train
+    test = pd.read_csv("final.csv")
+    train = pd.read_csv("finalT.csv")
+    load_clf = pickle.load(open('clf.pkl', 'rb'))
+    return test, train, load_clf
 
-test, train = load_data()
+test, train, load_clf = load_data()
 
 
 
@@ -35,22 +36,36 @@ client = ["aucun"]+client
 
 ID = st.sidebar.selectbox('ID du client', client)
 if ID != "aucun":
-    load_clf = pickle.load(open('/home/princeba/LIVRE_PERSO/01_travailPerso/AI-Engenierie/openclassRoom/projet/projet07/projet_07_model_scoring/app/clf.pkl', 'rb'))
+    #load_clf = pickle.load(open('clf.pkl', 'rb'))
 
     profil = test.loc[test['SK_ID_CURR']== ID, "CNT_CHILDREN" :]
 
     prediction = load_clf.predict(profil)
     prediction_proba = load_clf.predict_proba(profil)
 
-    st.subheader('Prediction')
-    st.write(prediction)
+    #st.subheader('Prediction')
+    #st.write(prediction)
 
-    st.subheader('Prediction Probability')
-    st.write(prediction_proba)
+    st.subheader('Défaut')
+    st.write(pd.DataFrame(prediction_proba[[0],[1]])[0].values[0])
 
     st.subheader('Le client parmis les clients')
-    st.write("Statut du client :", str(train.loc[train['SK_ID_CURR']== ID, "NAME_FAMILY_STATUS"].values))
-    st.write("nombre d'enfant :", str(profil['CNT_CHILDREN'].values))
+    col1, col2, col3, col4, col5 = st.beta_columns(5)
+    #col1.write("Statut du client :", str(train.loc[train['SK_ID_CURR']== ID, "NAME_FAMILY_STATUS"].values))
+    col1.write("""### Statut du client """)
+    col1.write(str(train.loc[train['SK_ID_CURR']== ID, "NAME_FAMILY_STATUS"].values[0]))
+    #col2.write("nombre d'enfant :", str(profil['CNT_CHILDREN'].values))
+    col2.write("""### Nombre d'enfant """)
+    col2.write( str(profil['CNT_CHILDREN'].values[0]))
+
+    col3.write("""### Revenu """)
+    col3.write( str(profil['AMT_INCOME_TOTAL'].values[0]))
+
+    col4.write("""### Ancienneté """)
+    col4.write( str(profil['DAYS_EMPLOYED'].values[0]//365))
+
+    col5.write("""### le poids du crédit sur le revenu """)
+    col5.write( str(profil['credSURrevenu'].values[0]))
 
 else:
     st.subheader('Dashboard')
@@ -70,9 +85,26 @@ else:
     clientDash = clientS.sort_values(by='AMT_INCOME_TOTAL', axis=0, ascending=True)['SK_ID_CURR'].unique()
     ID_2 = st.sidebar.selectbox('ID du client', clientDash)
     profil_2 = test.loc[test['SK_ID_CURR']== ID_2, "CNT_CHILDREN" :]
-    st.write("Statut du client :", str(train.loc[train['SK_ID_CURR']== ID_2, "NAME_FAMILY_STATUS"].values))
-    st.write("Nombre d'enfant :", str(profil_2['CNT_CHILDREN'].values))
-    st.write("Revenu :", str(profil_2['AMT_INCOME_TOTAL'].values))
+    #st.write("Statut du client :", str(train.loc[train['SK_ID_CURR']== ID_2, "NAME_FAMILY_STATUS"].values))
+    #st.write("Nombre d'enfant :", str(profil_2['CNT_CHILDREN'].values))
+    #st.write("Revenu :", str(profil_2['AMT_INCOME_TOTAL'].values))
+
+    col1, col2, col3, col4, col5 = st.beta_columns(5)
+    #col1.write("Statut du client :", str(train.loc[train['SK_ID_CURR']== ID, "NAME_FAMILY_STATUS"].values))
+    col1.write("""### Statut du client """)
+    col1.write(str(train.loc[train['SK_ID_CURR']== ID_2, "NAME_FAMILY_STATUS"].values[0]))
+    #col2.write("nombre d'enfant :", str(profil['CNT_CHILDREN'].values))
+    col2.write("""### Nombre d'enfant """)
+    col2.write( str(profil_2['CNT_CHILDREN'].values[0]))
+
+    col3.write("""### Revenu """)
+    col3.write( str(profil_2['AMT_INCOME_TOTAL'].values[0]))
+
+    col4.write("""### Ancienneté """)
+    col4.write( str(profil_2['DAYS_EMPLOYED'].values[0]//365))
+
+    col5.write("""### le poids du crédit sur le revenu """)
+    col5.write( str(profil_2['credSURrevenu'].values[0]))
 
    
 
@@ -89,7 +121,7 @@ def affichageMoyenne(client="aucun"):
     if client != "aucun":
         plt.axvline(profil["AMT_INCOME_TOTAL"].mean(), color='black', label="client")
     plt.legend()
-    plt.title("Revenus Total")
+    plt.title("Revenu Total")
 
     valMaxi = train["AMT_CREDIT"].describe()['max']
     plt.subplot(2, 2, 2)
@@ -122,7 +154,7 @@ def affichageMoyenne(client="aucun"):
 
 def affichageDash():
     trainNondef = train[train["TARGET"]==0]
-    plt.figure(figsize=(20,10))
+    plt.figure(figsize=(20,8))
     valMaxi = clientS["AMT_INCOME_TOTAL"].describe()['75%']
     plt.subplot(1, 2, 1)
     clientS.loc[clientS["AMT_INCOME_TOTAL"]<valMaxi,"AMT_INCOME_TOTAL"].hist()
